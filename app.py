@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from openai import OpenAI
 from flask_cors import CORS
-import time  # <--- adicionamos isto
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -13,7 +13,7 @@ def chat():
     email = request.json.get('email')
     mensagem = request.json.get('message')
 
-    allowed_emails = ['aluno1@gmail.com', 'aluno2@gmail.com']  # edite depois se precisar
+    allowed_emails = ['aluno1@gmail.com', 'aluno2@gmail.com']
 
     if email not in allowed_emails:
         return jsonify({"error": "E-mail não autorizado."}), 403
@@ -31,9 +31,8 @@ def chat():
         assistant_id='asst_JuGSeUFtvvkiSCfav4LNQUqw'
     )
 
-    # Melhor solução: adicionar intervalo de tempo entre cada verificação
     while run.status not in ['completed', 'failed']:
-        time.sleep(1)  # Espera 1 segundo entre as consultas
+        time.sleep(1)
         run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
