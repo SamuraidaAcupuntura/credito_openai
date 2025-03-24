@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-client = OpenAI(api_key='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')
+client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 
 allowed_emails = [
     'paulocosta@samuraidaacupuntura.com.br', 
