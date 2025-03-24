@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-client = OpenAI(api_key='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')
+client = OpenAI(api_key='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')
 
 allowed_emails = [
     'paulocosta@samuraidaacupuntura.com.br', 
@@ -22,7 +22,6 @@ def chat():
     if email not in allowed_emails:
         return jsonify({"error": "E-mail não autorizado."}), 403
 
-    # Chamada direta rápida para GPT-4 (sem threads lentas):
     resposta = client.chat.completions.create(
         model='gpt-4-turbo',
         messages=[
