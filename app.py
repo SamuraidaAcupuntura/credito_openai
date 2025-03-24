@@ -9,7 +9,11 @@ CORS(app)
 
 client = OpenAI(api_key='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')
 
-allowed_emails = ['paulocosta@samuraidaacupuntura.com.br', 'alceuacosta@gmail.com', 'andreiabioterapia@hotmail.com']
+allowed_emails = [
+    'paulocosta@samuraidaacupuntura.com.br', 
+    'alceuacosta@gmail.com', 
+    'andreiabioterapia@hotmail.com'
+]
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -21,17 +25,31 @@ def chat():
 
     thread = client.beta.threads.create()
 
-    client.beta.threads.messages.create(thread_id=thread.id, role='user', content=mensagem)
+    client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role='user',
+        content=mensagem
+    )
 
-    run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id='asst_JuGSeUFtvvkiSCfav4LNQUqw')
+    run = client.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id='asst_JuGSeUFtvvkiSCfav4LNQUqw'
+    )
 
-    while run.status not in ['completed', 'failed']:
-        time.sleep(1)
+    # Adicionado tratamento seguro com timeout máximo de 90 segundos:
+    timeout = 90  # tempo máximo (segundos)
+    tempo_esperado = 0
+
+    while run.status not in ['completed', 'failed', 'expired']:
+        time.sleep(2)  # intervalo de checagem de 2 segundos
+        tempo_esperado += 2
         run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+
+        if tempo_esperado >= timeout:
+            return jsonify({"reply": "⚠️ O assistente está demorando muito para responder. Por favor, tente novamente."}), 504
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
 
-    # Correção definitiva para obter a resposta correta:
     resposta = ''
     for msg in messages.data:
         if msg.role == 'assistant':
