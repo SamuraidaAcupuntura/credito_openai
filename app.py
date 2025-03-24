@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from openai import OpenAI
 from flask_cors import CORS
+import time  # <--- adicionamos isto
 
 app = Flask(__name__)
 CORS(app)
@@ -30,7 +31,9 @@ def chat():
         assistant_id='asst_JuGSeUFtvvkiSCfav4LNQUqw'
     )
 
+    # Melhor solução: adicionar intervalo de tempo entre cada verificação
     while run.status not in ['completed', 'failed']:
+        time.sleep(1)  # Espera 1 segundo entre as consultas
         run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
