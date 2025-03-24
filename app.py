@@ -14,7 +14,7 @@ def chat():
     email = request.json.get('email')
     mensagem = request.json.get('message')
 
-    allowed_emails = ['aluno1@gmail.com', 'aluno2@gmail.com']
+    allowed_emails = ['paulocosta@samuraidaacupuntura.com.br', 'alceuacosta@gmail.com']
 
     if email not in allowed_emails:
         return jsonify({"error": "E-mail não autorizado."}), 403
