@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from openai import OpenAI
 from flask_cors import CORS
 import time
+import os  # <--- Adicionamos para ajustar a porta automaticamente
 
 app = Flask(__name__)
 CORS(app)
@@ -40,5 +41,7 @@ def chat():
 
     return jsonify({'reply': resposta})
 
+# Aqui está a solução definitiva para o Render detectar a porta automaticamente:
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
