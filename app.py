@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from openai import OpenAI
 from flask_cors import CORS
-import time
 import os
 
 app = Flask(__name__)
@@ -23,40 +22,17 @@ def chat():
     if email not in allowed_emails:
         return jsonify({"error": "E-mail não autorizado."}), 403
 
-    thread = client.beta.threads.create()
-
-    client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role='user',
-        content=mensagem
+    # Chamada direta rápida para GPT-4 (sem threads lentas):
+    resposta = client.chat.completions.create(
+        model='gpt-4-turbo',
+        messages=[
+            {"role": "system", "content": "Você é o Samurai da Acupuntura, especialista em Medicina Tradicional Chinesa."},
+            {"role": "user", "content": mensagem}
+        ],
+        max_tokens=500
     )
 
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id='asst_JuGSeUFtvvkiSCfav4LNQUqw'
-    )
-
-    # Adicionado tratamento seguro com timeout máximo de 90 segundos:
-    timeout = 90  # tempo máximo (segundos)
-    tempo_esperado = 0
-
-    while run.status not in ['completed', 'failed', 'expired']:
-        time.sleep(2)  # intervalo de checagem de 2 segundos
-        tempo_esperado += 2
-        run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-
-        if tempo_esperado >= timeout:
-            return jsonify({"reply": "⚠️ O assistente está demorando muito para responder. Por favor, tente novamente."}), 504
-
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-
-    resposta = ''
-    for msg in messages.data:
-        if msg.role == 'assistant':
-            resposta = msg.content[0].text.value
-            break
-
-    return jsonify({'reply': resposta})
+    return jsonify({'reply': resposta.choices[0].message.content.strip()})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
