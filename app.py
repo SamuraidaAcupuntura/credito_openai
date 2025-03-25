@@ -1,18 +1,17 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from openai import OpenAI
+import base64
 import os
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
 
-# Inicializar cliente OpenAI
-try:
-    api_key = os.environ["OPENAI_API_KEY"]
-    client = OpenAI(api_key=api_key)
-except Exception as e:
-    api_key = None
-    erro_api = str(e)
+# Inicializa o cliente OpenAI com a API key do ambiente
+api_key = os.environ.get("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("⚠️ OPENAI_API_KEY não está definida no ambiente.")
+client = OpenAI(api_key=api_key)
 
 # Lista de e-mails autorizados
 allowed_emails = [
@@ -23,56 +22,57 @@ allowed_emails = [
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    if api_key is None:
-        return jsonify({"error": f"Erro na API Key: {erro_api}"}), 500
-
-    data = request.get_json()
-    email = data.get("email", "").strip()
-    mensagem = data.get("message", "").strip()
-    imagem_base64 = data.get("image", None)
-
-    if email not in allowed_emails:
-        return jsonify({"error": "❌ E-mail não autorizado."}), 403
-
-    if not mensagem and not imagem_base64:
-        return jsonify({"error": "⚠️ Mensagem ausente."}), 400
-
     try:
-        # Caso tenha imagem, usar o GPT-4 com vision
-        if imagem_base64:
-            content = []
-            if mensagem:
-                content.append({"type": "text", "text": mensagem})
-            content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{imagem_base64}"
-                }
+        data = request.json
+        email = data.get("email")
+        message = data.get("message")
+        image_base64 = data.get("image")  # opcional
+
+        if not email or email not in allowed_emails:
+            return jsonify({"error": "E-mail não autorizado."}), 403
+
+        if not message and not image_base64:
+            return jsonify({"error": "Mensagem ausente."}), 400
+
+        messages = [
+            {
+                "role": "system",
+                "content": "Você é o Samurai da Acupuntura, especialista em Medicina Tradicional Chinesa, espiritualidade e sabedoria oriental. Responda de forma poética, profunda e acolhedora, mas com base sólida."
+            }
+        ]
+
+        if image_base64:
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": message or "Analise esta imagem."},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
+                    }
+                ]
             })
-
-            resposta = client.chat.completions.create(
-                model="gpt-4-vision-preview",
-                messages=[
-                    {"role": "system", "content": "Você é o Samurai da Acupuntura, especialista em Medicina Tradicional Chinesa."},
-                    {"role": "user", "content": content}
-                ],
-                max_tokens=1000
-            )
+            model = "gpt-4-vision-preview"
         else:
-            # Apenas texto
-            resposta = client.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=[
-                    {"role": "system", "content": "Você é o Samurai da Acupuntura, especialista em Medicina Tradicional Chinesa."},
-                    {"role": "user", "content": mensagem}
-                ],
-                max_tokens=1000
-            )
+            messages.append({
+                "role": "user",
+                "content": message
+            })
+            model = "gpt-4"
 
-        return jsonify({"reply": resposta.choices[0].message.content.strip()})
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=1000
+        )
+
+        reply = response.choices[0].message.content.strip()
+        return jsonify({"reply": reply})
 
     except Exception as e:
-        return jsonify({"error": f"❌ Erro ao gerar resposta: {str(e)}"}), 500
+        return jsonify({"error": f"Erro ao gerar resposta: {str(e)}"}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
