@@ -10,9 +10,12 @@ CORS(app)
 try:
     api_key = os.environ['OPENAI_API_KEY']
     client = OpenAI(api_key=api_key)
+    
 except Exception as e:
-    api_key = None
-    erro_api = str(e)
+        import traceback
+        traceback_str = traceback.format_exc()
+        print("ERRO AO GERAR RESPOSTA:\n", traceback_str)
+        return jsonify({"error": f"Erro ao gerar resposta: {str(e)}"}), 500
 
 # Lista de e-mails permitidos
 allowed_emails = [
